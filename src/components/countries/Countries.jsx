@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useState } from "react";
 import Country from "../country/Country";
-
+import { addCartToLocalStorage, getStoredCartFromLocalStorage, removeStoredCart } from "../../Utilities/Localstorage";
 
 
 const Countries = () => {
@@ -13,9 +13,6 @@ const Countries = () => {
       const [visitedFlag, setVisitedFlag] = useState([]);
 
       useEffect((() => {
-            // fetch('https://restcountries.com/v3.1/all')
-            // .then(response=>response.json())
-            // .then(data=>console.log(data))
             const fetchCountryData = async () => {
                   try {
                         const response = await fetch('https://restcountries.com/v3.1/all');
@@ -28,6 +25,20 @@ const Countries = () => {
             fetchCountryData();
       }), [])
 
+      useEffect(() => {
+            if (countries.length > 0) {
+                  const storedCart = getStoredCartFromLocalStorage();
+
+                  let savedFlag = [];
+                  for(let flag of storedCart){
+                        const findCart = countries.find(country=> country.cca3 === flag);
+                        savedFlag.push(findCart)
+                  }
+                  setVisitedFlag(savedFlag);
+            }
+
+      }, [countries])
+
       const handleToAddVisitedCountry = (country) => {
             const newVisitedCountry = [...visitedCountry, country];
             setVisitedCountry(newVisitedCountry);
@@ -37,7 +48,19 @@ const Countries = () => {
             const newVisitedFlag = [...visitedFlag, flag];
             setVisitedFlag(newVisitedFlag)
       }
-      console.log(visitedFlag);
+
+      // handle click for remove flag
+      const showFlagToUI = (flag) => {
+            addCartToLocalStorage(flag);
+      }
+
+      const handleFlagRemove = (flag) => {
+            removeStoredCart(flag)
+
+            const previousCart = visitedFlag.filter(flags=>flags.cca3 !== flag)
+            setVisitedFlag(previousCart);
+      }
+
       return (
             <div>
                   <h3 className="text-3xl font-medium">Countries: {countries.length}</h3>
@@ -47,7 +70,7 @@ const Countries = () => {
                         {/* <img src={flags.png} alt="" /> */}
                         <ul className="ml-10">
                               {
-                                    visitedCountry.map(country => <li key={country.name.common} className="font-bold list-decimal">{country.name.common}</li>)
+                                    visitedCountry.map((country, index) => <li key={country.name.common + index} className="font-bold list-decimal">{country.name.common}</li>)
                               }
                         </ul>
                   </div>
@@ -56,7 +79,11 @@ const Countries = () => {
                         <h3 className="text-3xl">Visited Flag: {visitedFlag.length}</h3>
                         <ul className="ml-10 grid grid-cols-10 gap-2">
                               {
-                                    visitedFlag.map((flag, index) => <img className="w-[100px]  h-[50px]" key={index} src={flag.flags.png} alt="" />)
+                                    visitedFlag.map((flag, index) => <div key={index}>
+                                          <img className="w-[100px]  h-[50px]"
+                                                src={flag.flags.png} alt="" />
+                                          <button onClick={()=>{handleFlagRemove(flag.cca3)}}>remove</button>
+                                    </div>)
                               }
                         </ul>
                   </div>
@@ -68,7 +95,8 @@ const Countries = () => {
                                           country={country}
                                           key={country.cca3}
                                           handleToAddVisitedCountry={handleToAddVisitedCountry}
-                                          handleVisitedFlag={handleVisitedFlag}>
+                                          handleVisitedFlag={handleVisitedFlag}
+                                          showFlagToUI={showFlagToUI}>
                                     </Country>)
                         }
                   </div>
